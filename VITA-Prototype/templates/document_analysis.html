@@ -1,0 +1,293 @@
+{% extends "layout.html" %}
+
+{% block title %}Document Analysis - VITA{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 mb-0">Document Analysis Results</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('document_upload') }}">Documents</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Analysis</li>
+            </ol>
+        </nav>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <!-- Analysis Results Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-transparent">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ document.original_filename }}</h5>
+                        <button id="viewToggleBtn" class="btn btn-sm btn-outline-primary">View Simplified Version</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Analysis Header -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            {% if document.is_analyzed %}
+                            <div class="badge bg-success p-2 me-3">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            {% else %}
+                            <div class="badge bg-warning p-2 me-3">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            {% endif %}
+                            <div>
+                                <h5 class="mb-1">{% if document.is_analyzed %}Analysis Complete{% else %}Awaiting Analysis{% endif %}</h5>
+                                <p class="text-muted small mb-0">
+                                    Uploaded on {{ document.upload_date.strftime('%B %d, %Y at %I:%M %p') }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Analysis Content -->
+                    {% if document.is_analyzed %}
+                    <div id="analysisContent" data-analysis="{{ document.analysis_results }}">
+                        <!-- Original Document Content -->
+                        <div id="originalContent">
+                            <h5 class="mb-3">Original Document</h5>
+                            <pre class="bg-dark p-3 rounded text-light" style="white-space: pre-wrap; overflow-wrap: break-word;">{{ document.analysis_results }}</pre>
+                        </div>
+                        
+                        <!-- Simplified Content -->
+                        <div id="simplifiedContent" class="d-none">
+                            <h5 class="mb-3">Simplified Explanation</h5>
+                            <div class="simplified-content">
+                                {{ document.simplified_content|safe }}
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-file-medical-alt text-muted mb-3" style="font-size: 3rem;"></i>
+                        <h5 class="mb-3">Document Needs Analysis</h5>
+                        <p class="mb-4">This document hasn't been analyzed yet. Start the analysis process to get AI-powered insights and simplified explanations.</p>
+                        <a href="{{ url_for('analyze_document', document_id=document.id) }}" class="btn btn-primary">
+                            <i class="fas fa-brain me-2"></i> Start Analysis
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Document Summary -->
+            {% if document.is_analyzed %}
+            <div class="card">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">Key Insights</h5>
+                </div>
+                <div class="card-body">
+                    {% set analysis_data = document.analysis_results|fromjson %}
+                    
+                    <div class="row">
+                        <!-- Document Type -->
+                        <div class="col-md-6 mb-4">
+                            <div class="analysis-section">
+                                <h6 class="fw-bold mb-3">
+                                    <i class="fas fa-file-medical me-2 text-primary"></i> Document Type
+                                </h6>
+                                <p class="mb-0">{{ analysis_data.document_type }}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Critical Values -->
+                        <div class="col-md-6 mb-4">
+                            <div class="analysis-section">
+                                <h6 class="fw-bold mb-3">
+                                    <i class="fas fa-exclamation-circle me-2 text-danger"></i> Critical Values
+                                </h6>
+                                {% if analysis_data.critical_values and analysis_data.critical_values|length > 0 %}
+                                <ul class="mb-0">
+                                    {% for value in analysis_data.critical_values %}
+                                    <li>{{ value }}</li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <p class="mb-0">No critical values identified</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Main Findings -->
+                        <div class="col-md-6 mb-4">
+                            <div class="analysis-section">
+                                <h6 class="fw-bold mb-3">
+                                    <i class="fas fa-search me-2 text-info"></i> Main Findings
+                                </h6>
+                                {% if analysis_data.main_findings and analysis_data.main_findings|length > 0 %}
+                                <ul class="mb-0">
+                                    {% for finding in analysis_data.main_findings %}
+                                    <li>{{ finding }}</li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <p class="mb-0">No specific findings identified</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Treatments/Recommendations -->
+                        <div class="col-md-6 mb-4">
+                            <div class="analysis-section">
+                                <h6 class="fw-bold mb-3">
+                                    <i class="fas fa-prescription-bottle-alt me-2 text-success"></i> Treatments/Recommendations
+                                </h6>
+                                {% if analysis_data.treatments and analysis_data.treatments|length > 0 %}
+                                <ul class="mb-0">
+                                    {% for treatment in analysis_data.treatments %}
+                                    <li>{{ treatment }}</li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <p class="mb-0">No specific treatments recommended</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Follow Up Actions -->
+                        <div class="col-12 mb-4">
+                            <div class="analysis-section">
+                                <h6 class="fw-bold mb-3">
+                                    <i class="fas fa-calendar-check me-2 text-warning"></i> Follow-up Actions
+                                </h6>
+                                {% if analysis_data.follow_up and analysis_data.follow_up|length > 0 %}
+                                <ul class="mb-0">
+                                    {% for action in analysis_data.follow_up %}
+                                    <li>{{ action }}</li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <p class="mb-0">No specific follow-up actions required</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-lg-4 mb-4">
+            <!-- Medical Terminology -->
+            {% if document.is_analyzed %}
+            <div class="card mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">Medical Terminology</h5>
+                </div>
+                <div class="card-body">
+                    {% set analysis_data = document.analysis_results|fromjson %}
+                    
+                    {% if analysis_data.key_terms and analysis_data.key_terms|length > 0 %}
+                    <div class="list-group list-group-flush">
+                        {% for term_obj in analysis_data.key_terms %}
+                        <div class="list-group-item px-0 py-3 border-0 border-bottom">
+                            <h6 class="mb-1 text-info">{{ term_obj.term }}</h6>
+                            <p class="mb-0 small">{{ term_obj.meaning }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-center py-3 text-muted">
+                        No medical terms identified in this document.
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Document Actions -->
+            <div class="card mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">Document Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('document_upload') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-upload me-2"></i> Upload New Document
+                        </a>
+                        
+                        {% if document.is_analyzed %}
+                        <button class="btn btn-outline-info" onclick="window.print()">
+                            <i class="fas fa-print me-2"></i> Print Analysis
+                        </button>
+                        
+                        <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#shareModal">
+                            <i class="fas fa-share-alt me-2"></i> Share with Doctor
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tips for Understanding -->
+            <div class="card">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">Tips for Understanding</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-3">
+                            <i class="fas fa-info-circle text-primary me-2"></i>
+                            <strong>Toggle Views:</strong> Switch between original and simplified versions using the button at the top.
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-info-circle text-primary me-2"></i>
+                            <strong>Medical Terms:</strong> Hover over highlighted terms to see their definitions.
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-info-circle text-primary me-2"></i>
+                            <strong>Key Insights:</strong> Check the summary section for the most important information.
+                        </li>
+                        <li>
+                            <i class="fas fa-info-circle text-primary me-2"></i>
+                            <strong>Ask Questions:</strong> If something isn't clear, make note of it to ask your healthcare provider.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Share Modal -->
+<div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shareModalLabel">Share with Healthcare Provider</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label for="doctorEmail" class="form-label">Doctor's Email</label>
+                        <input type="email" class="form-control" id="doctorEmail" placeholder="doctor@example.com">
+                    </div>
+                    <div class="mb-3">
+                        <label for="shareMessage" class="form-label">Message (Optional)</label>
+                        <textarea class="form-control" id="shareMessage" rows="3" placeholder="Add a note about this document..."></textarea>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="includeAnalysis" checked>
+                        <label class="form-check-label" for="includeAnalysis">
+                            Include AI analysis results
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary">Share Document</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

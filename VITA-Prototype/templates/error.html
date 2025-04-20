@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+
+{% block title %}Error {{ error_code }} - MediSense{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6 text-center">
+            <!-- Error Illustration -->
+            <svg width="250" height="200" viewBox="0 0 250 200" class="mb-4">
+                <!-- Error Icon -->
+                <circle cx="125" cy="100" r="70" fill="#dc3545" opacity="0.1"/>
+                <circle cx="125" cy="100" r="50" fill="#dc3545" opacity="0.2"/>
+                <circle cx="125" cy="100" r="30" fill="#dc3545"/>
+                <text x="125" y="110" font-size="24" text-anchor="middle" fill="#fff">{{ error_code }}</text>
+                
+                <!-- Decorative Elements -->
+                <path d="M40,120 C60,150 100,160 125,150 C150,140 190,150 210,120" stroke="#dc3545" fill="none" stroke-width="2" stroke-dasharray="5,5"/>
+                <circle cx="60" cy="70" r="5" fill="#dc3545" opacity="0.5"/>
+                <circle cx="190" cy="70" r="5" fill="#dc3545" opacity="0.5"/>
+                <circle cx="40" cy="110" r="3" fill="#dc3545" opacity="0.7"/>
+                <circle cx="210" cy="110" r="3" fill="#dc3545" opacity="0.7"/>
+            </svg>
+            
+            <!-- Error Message -->
+            <h1 class="display-3 fw-bold text-danger mb-3">{{ error_code }}</h1>
+            <h2 class="h4 mb-4">{{ error_message }}</h2>
+            
+            <p class="text-muted mb-4">
+                Something went wrong. We apologize for the inconvenience.
+            </p>
+            
+            <!-- Action Buttons -->
+            <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
+                <button class="btn btn-outline-secondary" onclick="history.back()">
+                    <i class="fas fa-arrow-left me-2"></i> Go Back
+                </button>
+                <a href="{{ url_for('index') }}" class="btn btn-primary">
+                    <i class="fas fa-home me-2"></i> Return to Home
+                </a>
+            </div>
+            
+            <!-- Helpful Links -->
+            <div class="mt-5">
+                <h6 class="text-muted mb-3">You might want to:</h6>
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('index') }}" class="list-group-item list-group-item-action bg-transparent">
+                        <i class="fas fa-home me-2"></i> Return to the home page
+                    </a>
+                    <a href="{{ url_for('login') }}" class="list-group-item list-group-item-action bg-transparent">
+                        <i class="fas fa-sign-in-alt me-2"></i> Log in to your account
+                    </a>
+                    <a href="{{ url_for('register') }}" class="list-group-item list-group-item-action bg-transparent">
+                        <i class="fas fa-user-plus me-2"></i> Create a new account
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

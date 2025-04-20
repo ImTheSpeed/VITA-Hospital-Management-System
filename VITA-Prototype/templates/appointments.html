@@ -1,0 +1,535 @@
+{% extends "layout.html" %}
+
+{% block title %}Appointments - MediSense{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 mb-0">Appointments</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newAppointmentModal">
+            <i class="fas fa-plus me-2"></i> New Appointment
+        </button>
+    </div>
+    
+    {% if not creating %}
+    <!-- Appointment Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="form-floating">
+                        <select class="form-select" id="statusFilter">
+                            <option value="all" selected>All Statuses</option>
+                            <option value="scheduled">Scheduled</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                        <label for="statusFilter">Status</label>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="form-floating">
+                        <input type="date" class="form-control" id="dateFilter">
+                        <label for="dateFilter">Date</label>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="d-grid">
+                        <button class="btn btn-outline-primary h-100" id="clearFilters">
+                            <i class="fas fa-filter me-2"></i> Clear Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Appointments Table -->
+    <div class="card">
+        <div class="card-header bg-transparent">
+            <ul class="nav nav-tabs card-header-tabs" id="appointmentTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="upcoming-tab" data-bs-toggle="tab" data-bs-target="#upcoming" type="button" role="tab" aria-controls="upcoming" aria-selected="true">Upcoming</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="past-tab" data-bs-toggle="tab" data-bs-target="#past" type="button" role="tab" aria-controls="past" aria-selected="false">Past</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="cancelled-tab" data-bs-toggle="tab" data-bs-target="#cancelled" type="button" role="tab" aria-controls="cancelled" aria-selected="false">Cancelled</button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content" id="appointmentTabContent">
+                <!-- Upcoming Appointments -->
+                <div class="tab-pane fade show active" id="upcoming" role="tabpanel" aria-labelledby="upcoming-tab">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    {% if current_user.is_doctor() %}
+                                    <th>Patient</th>
+                                    {% else %}
+                                    <th>Doctor</th>
+                                    {% endif %}
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                    <th>Notes</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% set upcoming_appointments = appointments|selectattr('status', 'equalto', 'scheduled')|list %}
+                                {% if upcoming_appointments %}
+                                    {% for appointment in upcoming_appointments %}
+                                    <tr>
+                                        {% if current_user.is_doctor() %}
+                                        <td>{{ appointment.patient.get_full_name() }}</td>
+                                        {% else %}
+                                        <td>
+                                            Dr. {{ appointment.doctor.get_full_name() }}
+                                            <div class="small text-muted">{{ appointment.doctor.doctor_profile.specialty }}</div>
+                                        </td>
+                                        {% endif %}
+                                        <td>{{ appointment.date.strftime('%b %d, %Y') }}</td>
+                                        <td>{{ appointment.time.strftime('%I:%M %p') }}</td>
+                                        <td>{{ appointment.duration }} min</td>
+                                        <td>
+                                            <span class="badge rounded-pill status-{{ appointment.status }}">
+                                                {{ appointment.status|capitalize }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if appointment.notes %}
+                                            <button class="btn btn-sm btn-link p-0" data-bs-toggle="popover" data-bs-trigger="focus" title="Appointment Notes" data-bs-content="{{ appointment.notes }}">
+                                                View Notes
+                                            </button>
+                                            {% else %}
+                                            <span class="text-muted">No notes</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                    Actions
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    {% if current_user.is_doctor() %}
+                                                    <li>
+                                                        <form action="{{ url_for('update_appointment', appointment_id=appointment.id) }}" method="POST" class="status-update-form">
+                                                            <input type="hidden" name="status" value="completed">
+                                                            <button type="submit" class="dropdown-item">
+                                                                <i class="fas fa-check-circle me-2 text-success"></i> Mark as Completed
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                    {% endif %}
+                                                    <li>
+                                                        <form action="{{ url_for('update_appointment', appointment_id=appointment.id) }}" method="POST" class="status-update-form">
+                                                            <input type="hidden" name="status" value="cancelled">
+                                                            <button type="submit" class="dropdown-item">
+                                                                <i class="fas fa-times-circle me-2 text-danger"></i> Cancel Appointment
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="8" class="text-center py-4">
+                                            <i class="fas fa-calendar text-muted mb-3" style="font-size: 2rem;"></i>
+                                            <h6 class="text-muted">No upcoming appointments</h6>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Past Appointments -->
+                <div class="tab-pane fade" id="past" role="tabpanel" aria-labelledby="past-tab">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    {% if current_user.is_doctor() %}
+                                    <th>Patient</th>
+                                    {% else %}
+                                    <th>Doctor</th>
+                                    {% endif %}
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                    <th>Notes</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% set past_appointments = appointments|selectattr('status', 'equalto', 'completed')|list %}
+                                {% if past_appointments %}
+                                    {% for appointment in past_appointments %}
+                                    <tr>
+                                        {% if current_user.is_doctor() %}
+                                        <td>{{ appointment.patient.get_full_name() }}</td>
+                                        {% else %}
+                                        <td>
+                                            Dr. {{ appointment.doctor.get_full_name() }}
+                                            <div class="small text-muted">{{ appointment.doctor.doctor_profile.specialty }}</div>
+                                        </td>
+                                        {% endif %}
+                                        <td>{{ appointment.date.strftime('%b %d, %Y') }}</td>
+                                        <td>{{ appointment.time.strftime('%I:%M %p') }}</td>
+                                        <td>{{ appointment.duration }} min</td>
+                                        <td>
+                                            <span class="badge rounded-pill status-{{ appointment.status }}">
+                                                {{ appointment.status|capitalize }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if appointment.notes %}
+                                            <button class="btn btn-sm btn-link p-0" data-bs-toggle="popover" data-bs-trigger="focus" title="Appointment Notes" data-bs-content="{{ appointment.notes }}">
+                                                View Notes
+                                            </button>
+                                            {% else %}
+                                            <span class="text-muted">No notes</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if current_user.is_doctor() %}
+                                            <a href="{{ url_for('new_medical_record') }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-notes-medical"></i> Create Record
+                                            </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="8" class="text-center py-4">
+                                            <i class="fas fa-calendar-check text-muted mb-3" style="font-size: 2rem;"></i>
+                                            <h6 class="text-muted">No past appointments</h6>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Cancelled Appointments -->
+                <div class="tab-pane fade" id="cancelled" role="tabpanel" aria-labelledby="cancelled-tab">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    {% if current_user.is_doctor() %}
+                                    <th>Patient</th>
+                                    {% else %}
+                                    <th>Doctor</th>
+                                    {% endif %}
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                    <th>Notes</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% set cancelled_appointments = appointments|selectattr('status', 'equalto', 'cancelled')|list %}
+                                {% if cancelled_appointments %}
+                                    {% for appointment in cancelled_appointments %}
+                                    <tr>
+                                        {% if current_user.is_doctor() %}
+                                        <td>{{ appointment.patient.get_full_name() }}</td>
+                                        {% else %}
+                                        <td>
+                                            Dr. {{ appointment.doctor.get_full_name() }}
+                                            <div class="small text-muted">{{ appointment.doctor.doctor_profile.specialty }}</div>
+                                        </td>
+                                        {% endif %}
+                                        <td>{{ appointment.date.strftime('%b %d, %Y') }}</td>
+                                        <td>{{ appointment.time.strftime('%I:%M %p') }}</td>
+                                        <td>{{ appointment.duration }} min</td>
+                                        <td>
+                                            <span class="badge rounded-pill status-{{ appointment.status }}">
+                                                {{ appointment.status|capitalize }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if appointment.notes %}
+                                            <button class="btn btn-sm btn-link p-0" data-bs-toggle="popover" data-bs-trigger="focus" title="Appointment Notes" data-bs-content="{{ appointment.notes }}">
+                                                View Notes
+                                            </button>
+                                            {% else %}
+                                            <span class="text-muted">No notes</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#rescheduleModal" data-appointment-id="{{ appointment.id }}">
+                                                <i class="fas fa-calendar-alt"></i> Reschedule
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="8" class="text-center py-4">
+                                            <i class="fas fa-calendar-times text-muted mb-3" style="font-size: 2rem;"></i>
+                                            <h6 class="text-muted">No cancelled appointments</h6>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if creating %}
+    <!-- New Appointment Form -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">Schedule New Appointment</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('new_appointment') }}">
+                        <div class="mb-3">
+                            {% if current_user.is_doctor() %}
+                            <label for="patient_id" class="form-label">Patient</label>
+                            <select class="form-select" id="patient_id" name="patient_id" required>
+                                <option value="" selected disabled>Select Patient</option>
+                                {% for patient in patients %}
+                                <option value="{{ patient.user_id }}">{{ patient.user.get_full_name() }}</option>
+                                {% endfor %}
+                            </select>
+                            {% else %}
+                            <label for="doctor_id" class="form-label">Doctor</label>
+                            <select class="form-select" id="doctor_id" name="doctor_id" required>
+                                <option value="" selected disabled>Select Doctor</option>
+                                {% for doctor in doctors %}
+                                <option value="{{ doctor.id }}">Dr. {{ doctor.get_full_name() }} ({{ doctor.doctor_profile.specialty }})</option>
+                                {% endfor %}
+                            </select>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label for="date" class="form-label">Date</label>
+                                <input type="date" class="form-control datepicker" id="date" name="date" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="time" class="form-label">Time</label>
+                                <input type="time" class="form-control" id="time" name="time" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes (Reason for Visit)</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('appointments') }}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Schedule Appointment</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- New Appointment Modal -->
+<div class="modal fade" id="newAppointmentModal" tabindex="-1" aria-labelledby="newAppointmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="newAppointmentModalLabel">Schedule New Appointment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('new_appointment') }}">
+                    <div class="mb-3">
+                        {% if current_user.is_doctor() %}
+                        <label for="modal_patient_id" class="form-label">Patient</label>
+                        <select class="form-select" id="modal_patient_id" name="patient_id" required>
+                            <option value="" selected disabled>Select Patient</option>
+                            {% for patient in patients %}
+                            <option value="{{ patient.user_id }}">{{ patient.user.get_full_name() }}</option>
+                            {% endfor %}
+                        </select>
+                        {% else %}
+                        <label for="modal_doctor_id" class="form-label">Doctor</label>
+                        <select class="form-select" id="modal_doctor_id" name="doctor_id" required>
+                            <option value="" selected disabled>Select Doctor</option>
+                            {% for doctor in doctors %}
+                            <option value="{{ doctor.id }}">Dr. {{ doctor.get_full_name() }} ({{ doctor.doctor_profile.specialty }})</option>
+                            {% endfor %}
+                        </select>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label for="modal_date" class="form-label">Date</label>
+                            <input type="date" class="form-control datepicker" id="modal_date" name="date" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="modal_time" class="form-label">Time</label>
+                            <input type="time" class="form-control" id="modal_time" name="time" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="modal_notes" class="form-label">Notes (Reason for Visit)</label>
+                        <textarea class="form-control" id="modal_notes" name="notes" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Schedule Appointment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reschedule Modal -->
+<div class="modal fade" id="rescheduleModal" tabindex="-1" aria-labelledby="rescheduleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="rescheduleModalLabel">Reschedule Appointment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" id="rescheduleForm">
+                    <input type="hidden" name="status" value="scheduled">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label for="reschedule_date" class="form-label">New Date</label>
+                            <input type="date" class="form-control datepicker" id="reschedule_date" name="date" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="reschedule_time" class="form-label">New Time</label>
+                            <input type="time" class="form-control" id="reschedule_time" name="time" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="reschedule_notes" class="form-label">Additional Notes</label>
+                        <textarea class="form-control" id="reschedule_notes" name="notes" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Reschedule</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize date pickers with min date as today
+        const datePickers = document.querySelectorAll('.datepicker');
+        const today = new Date().toISOString().split('T')[0];
+        
+        datePickers.forEach(picker => {
+            picker.setAttribute('min', today);
+        });
+        
+        // Handle reschedule modal
+        const rescheduleModal = document.getElementById('rescheduleModal');
+        if (rescheduleModal) {
+            rescheduleModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const appointmentId = button.getAttribute('data-appointment-id');
+                const form = document.getElementById('rescheduleForm');
+                form.action = '/appointments/' + appointmentId + '/update';
+            });
+        }
+        
+        // Filter functionality
+        const statusFilter = document.getElementById('statusFilter');
+        const dateFilter = document.getElementById('dateFilter');
+        const clearFiltersBtn = document.getElementById('clearFilters');
+        
+        if (statusFilter && dateFilter && clearFiltersBtn) {
+            // Filter by status
+            statusFilter.addEventListener('change', applyFilters);
+            
+            // Filter by date
+            dateFilter.addEventListener('change', applyFilters);
+            
+            // Clear filters
+            clearFiltersBtn.addEventListener('click', function() {
+                statusFilter.value = 'all';
+                dateFilter.value = '';
+                
+                // Show all rows
+                const allRows = document.querySelectorAll('tbody tr');
+                allRows.forEach(row => {
+                    row.style.display = '';
+                });
+            });
+            
+            function applyFilters() {
+                const status = statusFilter.value;
+                const date = dateFilter.value;
+                
+                const allRows = document.querySelectorAll('tbody tr');
+                
+                allRows.forEach(row => {
+                    let showRow = true;
+                    
+                    // Status filter
+                    if (status !== 'all') {
+                        const rowStatus = row.querySelector('.badge').textContent.trim().toLowerCase();
+                        if (rowStatus !== status) {
+                            showRow = false;
+                        }
+                    }
+                    
+                    // Date filter
+                    if (date && showRow) {
+                        const rowDate = row.querySelectorAll('td')[1].textContent.trim();
+                        // Convert date formats for comparison
+                        const rowDateObj = new Date(rowDate);
+                        const filterDateObj = new Date(date);
+                        
+                        if (rowDateObj.toDateString() !== filterDateObj.toDateString()) {
+                            showRow = false;
+                        }
+                    }
+                    
+                    // Show or hide row
+                    row.style.display = showRow ? '' : 'none';
+                });
+            }
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

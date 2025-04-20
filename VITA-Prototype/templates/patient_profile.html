@@ -1,0 +1,223 @@
+{% extends "layout.html" %}
+
+{% block title %}Patient Profile - MediSense{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Profile Header -->
+    <div class="profile-header rounded">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-2 text-center text-md-start mb-3 mb-md-0">
+                    <div class="bg-patient rounded-circle d-flex justify-content-center align-items-center mx-auto profile-img">
+                        <i class="fas fa-user fa-3x text-success"></i>
+                    </div>
+                </div>
+                <div class="col-md-7 text-center text-md-start">
+                    <h2 class="mb-1">{{ current_user.get_full_name() }}</h2>
+                    <p class="mb-0 text-muted">Patient ID: {{ current_user.id }}</p>
+                    {% if patient.date_of_birth %}
+                    <p class="mb-0 text-muted">Date of Birth: {{ patient.date_of_birth.strftime('%B %d, %Y') }}</p>
+                    {% endif %}
+                </div>
+                <div class="col-md-3 text-center text-md-end mt-3 mt-md-0">
+                    <span class="badge bg-success px-3 py-2">Patient</span>
+                    {% if patient.blood_type %}
+                    <span class="badge bg-secondary px-3 py-2 mt-2">
+                        <i class="fas fa-tint me-1"></i> {{ patient.blood_type }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <!-- Profile Details -->
+            <div class="card">
+                <div class="card-header bg-transparent">
+                    <ul class="nav nav-tabs card-header-tabs" id="profileTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="personal-tab" data-bs-toggle="tab" data-bs-target="#personal" type="button" role="tab" aria-controls="personal" aria-selected="true">Personal Information</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="medical-tab" data-bs-toggle="tab" data-bs-target="#medical" type="button" role="tab" aria-controls="medical" aria-selected="false">Medical Information</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="emergency-tab" data-bs-toggle="tab" data-bs-target="#emergency" type="button" role="tab" aria-controls="emergency" aria-selected="false">Emergency Contact</button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('patient_profile') }}">
+                        <div class="tab-content" id="profileTabContent">
+                            <!-- Personal Information Tab -->
+                            <div class="tab-pane fade show active" id="personal" role="tabpanel" aria-labelledby="personal-tab">
+                                <div class="row mb-3">
+                                    <div class="col-md-6 mb-3 mb-md-0">
+                                        <label for="first_name" class="form-label">First Name</label>
+                                        <input type="text" class="form-control" id="first_name" name="first_name" value="{{ current_user.first_name }}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="last_name" class="form-label">Last Name</label>
+                                        <input type="text" class="form-control" id="last_name" name="last_name" value="{{ current_user.last_name }}" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" name="email" value="{{ current_user.email }}" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="date_of_birth" class="form-label">Date of Birth</label>
+                                    <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" value="{{ patient.date_of_birth.strftime('%Y-%m-%d') if patient.date_of_birth else '' }}" required>
+                                </div>
+                            </div>
+                            
+                            <!-- Medical Information Tab -->
+                            <div class="tab-pane fade" id="medical" role="tabpanel" aria-labelledby="medical-tab">
+                                <div class="mb-3">
+                                    <label for="blood_type" class="form-label">Blood Type</label>
+                                    <select class="form-select" id="blood_type" name="blood_type">
+                                        <option value="" {% if not patient.blood_type %}selected{% endif %}>Unknown</option>
+                                        <option value="A+" {% if patient.blood_type == 'A+' %}selected{% endif %}>A+</option>
+                                        <option value="A-" {% if patient.blood_type == 'A-' %}selected{% endif %}>A-</option>
+                                        <option value="B+" {% if patient.blood_type == 'B+' %}selected{% endif %}>B+</option>
+                                        <option value="B-" {% if patient.blood_type == 'B-' %}selected{% endif %}>B-</option>
+                                        <option value="AB+" {% if patient.blood_type == 'AB+' %}selected{% endif %}>AB+</option>
+                                        <option value="AB-" {% if patient.blood_type == 'AB-' %}selected{% endif %}>AB-</option>
+                                        <option value="O+" {% if patient.blood_type == 'O+' %}selected{% endif %}>O+</option>
+                                        <option value="O-" {% if patient.blood_type == 'O-' %}selected{% endif %}>O-</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="allergies" class="form-label">Allergies</label>
+                                    <textarea class="form-control" id="allergies" name="allergies" rows="3" placeholder="List any allergies you have">{{ patient.allergies }}</textarea>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="medical_history" class="form-label">Medical History</label>
+                                    <textarea class="form-control" id="medical_history" name="medical_history" rows="5" placeholder="Brief summary of your medical history">{{ patient.medical_history }}</textarea>
+                                    <div class="form-text">Include any chronic conditions, past surgeries, or significant health events.</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Emergency Contact Tab -->
+                            <div class="tab-pane fade" id="emergency" role="tabpanel" aria-labelledby="emergency-tab">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i> Emergency contacts will only be used in case of a medical emergency.
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="emergency_contact_name" class="form-label">Emergency Contact Name</label>
+                                    <input type="text" class="form-control" id="emergency_contact_name" name="emergency_contact_name" value="{{ patient.emergency_contact_name }}">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="emergency_contact_number" class="form-label">Emergency Contact Phone Number</label>
+                                    <input type="tel" class="form-control" id="emergency_contact_number" name="emergency_contact_number" value="{{ patient.emergency_contact_number }}">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Relationship to Patient</label>
+                                    <select class="form-select">
+                                        <option value="" selected disabled>Select Relationship</option>
+                                        <option value="spouse">Spouse/Partner</option>
+                                        <option value="parent">Parent</option>
+                                        <option value="child">Child</option>
+                                        <option value="sibling">Sibling</option>
+                                        <option value="friend">Friend</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary">Update Profile</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Account Settings -->
+            <div class="card mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">Account Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h6 class="mb-3">Change Password</h6>
+                        <form>
+                            <div class="mb-3">
+                                <label for="current_password" class="form-label">Current Password</label>
+                                <input type="password" class="form-control" id="current_password" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="new_password" class="form-label">New Password</label>
+                                <input type="password" class="form-control" id="new_password" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                <input type="password" class="form-control" id="confirm_password" required>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-outline-primary">Change Password</button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div>
+                        <h6 class="mb-3">Privacy Settings</h6>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="reminder_emails" checked>
+                            <label class="form-check-label" for="reminder_emails">
+                                Receive appointment reminders via email
+                            </label>
+                        </div>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="share_data" checked>
+                            <label class="form-check-label" for="share_data">
+                                Share medical data with assigned doctors
+                            </label>
+                        </div>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="notifications">
+                            <label class="form-check-label" for="notifications">
+                                Receive promotional notifications
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('new_appointment') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-calendar-plus me-2"></i> Schedule Appointment
+                        </a>
+                        <a href="{{ url_for('document_upload') }}" class="btn btn-outline-success">
+                            <i class="fas fa-file-upload me-2"></i> Upload Medical Document
+                        </a>
+                        <a href="{{ url_for('medical_records') }}" class="btn btn-outline-info">
+                            <i class="fas fa-notes-medical me-2"></i> View Medical Records
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

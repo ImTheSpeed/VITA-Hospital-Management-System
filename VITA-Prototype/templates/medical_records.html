@@ -1,0 +1,341 @@
+{% extends "layout.html" %}
+
+{% block title %}Medical Records - MediSense{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 mb-0">Medical Records</h2>
+        {% if current_user.is_doctor() %}
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newRecordModal">
+            <i class="fas fa-plus me-2"></i> New Medical Record
+        </button>
+        {% endif %}
+    </div>
+    
+    {% if creating and current_user.is_doctor() %}
+    <!-- Create New Medical Record Form -->
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="card">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">Create New Medical Record</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('new_medical_record') }}">
+                        <div class="mb-4">
+                            <label for="patient_id" class="form-label">Patient</label>
+                            <select class="form-select" id="patient_id" name="patient_id" required>
+                                <option value="" selected disabled>Select Patient</option>
+                                {% for patient in patients %}
+                                <option value="{{ patient.id }}">{{ patient.user.get_full_name() }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="diagnosis" class="form-label">Diagnosis</label>
+                            <textarea class="form-control" id="diagnosis" name="diagnosis" rows="3" required></textarea>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label for="treatment" class="form-label">Treatment Plan</label>
+                                <textarea class="form-control" id="treatment" name="treatment" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="prescription" class="form-label">Prescription</label>
+                                <textarea class="form-control" id="prescription" name="prescription" rows="3"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="notes" class="form-label">Additional Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('medical_records') }}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Create Medical Record</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    
+    <!-- Record Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6 col-lg-4">
+                    <div class="form-floating">
+                        <input type="text" class="form-control" id="searchFilter" placeholder="Search">
+                        <label for="searchFilter">Search Records</label>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-4">
+                    <div class="form-floating">
+                        <input type="date" class="form-control" id="dateFilter">
+                        <label for="dateFilter">Date</label>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4">
+                    <div class="d-grid">
+                        <button class="btn btn-outline-primary h-100" id="clearFilters">
+                            <i class="fas fa-filter me-2"></i> Clear Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Records List -->
+    <div class="row">
+        {% if records %}
+            {% for record in records %}
+            <div class="col-md-6 col-xl-4 mb-4 record-item">
+                <div class="card h-100 medical-record-card">
+                    <div class="card-header bg-transparent">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">{{ record.date.strftime('%b %d, %Y') }}</h5>
+                            {% if current_user.is_doctor() %}
+                            <span class="badge bg-info text-white">{{ record.patient.user.get_full_name() }}</span>
+                            {% else %}
+                            <span class="badge bg-info text-white">Dr. {{ record.doctor.last_name }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <h6 class="fw-bold">Diagnosis</h6>
+                            <p>{{ record.diagnosis }}</p>
+                        </div>
+                        
+                        {% if record.treatment %}
+                        <div class="mb-3">
+                            <h6 class="fw-bold">Treatment</h6>
+                            <p>{{ record.treatment }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if record.prescription %}
+                        <div class="mb-3">
+                            <h6 class="fw-bold">Prescription</h6>
+                            <p>{{ record.prescription }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if record.notes %}
+                        <div>
+                            <h6 class="fw-bold">Notes</h6>
+                            <p class="mb-0">{{ record.notes }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Created: {{ record.created_at.strftime('%b %d, %Y') }}</small>
+                            <div>
+                                <button class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="modal" data-bs-target="#printModal" data-record-id="{{ record.id }}">
+                                    <i class="fas fa-print"></i>
+                                </button>
+                                {% if current_user.is_doctor() %}
+                                <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editRecordModal" data-record-id="{{ record.id }}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-notes-medical text-muted mb-3" style="font-size: 3rem;"></i>
+                        <h5>No Medical Records Found</h5>
+                        <p class="text-muted mb-4">
+                            {% if current_user.is_doctor() %}
+                            You haven't created any medical records yet.
+                            {% else %}
+                            You don't have any medical records in the system yet.
+                            {% endif %}
+                        </p>
+                        
+                        {% if current_user.is_doctor() %}
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newRecordModal">
+                            <i class="fas fa-plus me-2"></i> Create Medical Record
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- New Record Modal -->
+<div class="modal fade" id="newRecordModal" tabindex="-1" aria-labelledby="newRecordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="newRecordModalLabel">Create New Medical Record</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('new_medical_record') }}">
+                    <div class="mb-3">
+                        <label for="modal_patient_id" class="form-label">Patient</label>
+                        <select class="form-select" id="modal_patient_id" name="patient_id" required>
+                            <option value="" selected disabled>Select Patient</option>
+                            {% for patient in patients %}
+                            <option value="{{ patient.id }}">{{ patient.user.get_full_name() }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="modal_diagnosis" class="form-label">Diagnosis</label>
+                        <textarea class="form-control" id="modal_diagnosis" name="diagnosis" rows="3" required></textarea>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label for="modal_treatment" class="form-label">Treatment Plan</label>
+                            <textarea class="form-control" id="modal_treatment" name="treatment" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="modal_prescription" class="form-label">Prescription</label>
+                            <textarea class="form-control" id="modal_prescription" name="prescription" rows="3"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="modal_notes" class="form-label">Additional Notes</label>
+                        <textarea class="form-control" id="modal_notes" name="notes" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Create Medical Record</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print Modal -->
+<div class="modal fade" id="printModal" tabindex="-1" aria-labelledby="printModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="printModalLabel">Print Medical Record</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Choose the elements to include in the printed record:</p>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="print_diagnosis" checked>
+                    <label class="form-check-label" for="print_diagnosis">
+                        Diagnosis
+                    </label>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="print_treatment" checked>
+                    <label class="form-check-label" for="print_treatment">
+                        Treatment
+                    </label>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="print_prescription" checked>
+                    <label class="form-check-label" for="print_prescription">
+                        Prescription
+                    </label>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="print_notes">
+                    <label class="form-check-label" for="print_notes">
+                        Additional Notes
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="window.print()">Print Record</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Search filter functionality
+        const searchFilter = document.getElementById('searchFilter');
+        const dateFilter = document.getElementById('dateFilter');
+        const clearFiltersBtn = document.getElementById('clearFilters');
+        const recordItems = document.querySelectorAll('.record-item');
+        
+        if (searchFilter && dateFilter && clearFiltersBtn && recordItems.length > 0) {
+            // Filter by search text
+            searchFilter.addEventListener('input', applyFilters);
+            
+            // Filter by date
+            dateFilter.addEventListener('change', applyFilters);
+            
+            // Clear filters
+            clearFiltersBtn.addEventListener('click', function() {
+                searchFilter.value = '';
+                dateFilter.value = '';
+                
+                // Show all records
+                recordItems.forEach(item => {
+                    item.style.display = '';
+                });
+            });
+            
+            function applyFilters() {
+                const searchText = searchFilter.value.toLowerCase();
+                const date = dateFilter.value;
+                
+                recordItems.forEach(item => {
+                    let showItem = true;
+                    
+                    // Search text filter
+                    if (searchText) {
+                        const content = item.textContent.toLowerCase();
+                        if (!content.includes(searchText)) {
+                            showItem = false;
+                        }
+                    }
+                    
+                    // Date filter
+                    if (date && showItem) {
+                        const recordDate = item.querySelector('.card-header h5').textContent.trim();
+                        // Convert date formats for comparison
+                        const recordDateObj = new Date(recordDate);
+                        const filterDateObj = new Date(date);
+                        
+                        if (recordDateObj.toDateString() !== filterDateObj.toDateString()) {
+                            showItem = false;
+                        }
+                    }
+                    
+                    // Show or hide item
+                    item.style.display = showItem ? '' : 'none';
+                });
+            }
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

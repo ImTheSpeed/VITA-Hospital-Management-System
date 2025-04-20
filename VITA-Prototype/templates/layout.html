@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}VITA - Vital Intelligence for Treatment & Access{% endblock %}</title>
+    <!-- Bootstrap CSS (Replit-themed) -->
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+        <!-- Authenticated Navigation -->
+        <div class="container-fluid">
+            <div class="row">
+                <!-- Sidebar -->
+                <div class="col-md-3 col-lg-2 d-md-block bg-body-tertiary sidebar collapse" style="min-height: 100vh; position: sticky; top: 0; height: 100vh;">
+                    <div class="position-sticky pt-3">
+                        <div class="d-flex align-items-center mb-4 ps-3">
+                            <i class="fas fa-hospital me-2 fs-4 text-primary"></i>
+                            <span class="fs-4 fw-semibold">VITA</span>
+                        </div>
+                        
+                        <hr>
+                        
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link {{ 'active' if request.endpoint == 'dashboard_doctor' or request.endpoint == 'dashboard_patient' else '' }}" href="{{ url_for('dashboard') }}">
+                                    <i class="fas fa-chart-line me-2"></i>
+                                    Dashboard
+                                </a>
+                            </li>
+                            
+                            <li class="nav-item">
+                                <a class="nav-link {{ 'active' if request.endpoint == 'appointments' or request.endpoint == 'new_appointment' else '' }}" href="{{ url_for('appointments') }}">
+                                    <i class="fas fa-calendar-alt me-2"></i>
+                                    Appointments
+                                </a>
+                            </li>
+                            
+                            {% if current_user.is_doctor() %}
+                            <li class="nav-item">
+                                <a class="nav-link {{ 'active' if request.endpoint == 'medical_records' or request.endpoint == 'new_medical_record' else '' }}" href="{{ url_for('medical_records') }}">
+                                    <i class="fas fa-notes-medical me-2"></i>
+                                    Medical Records
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            <li class="nav-item">
+                                <a class="nav-link {{ 'active' if request.endpoint == 'document_upload' or request.endpoint == 'analyze_document' or request.endpoint == 'document_analysis' else '' }}" href="{{ url_for('document_upload') }}">
+                                    <i class="fas fa-file-medical me-2"></i>
+                                    Document Analysis
+                                </a>
+                            </li>
+                            
+                            <li class="nav-item">
+                                <a class="nav-link {{ 'active' if request.endpoint == 'patient_profile' or request.endpoint == 'doctor_profile' else '' }}" href="{{ url_for('profile') }}">
+                                    <i class="fas fa-user-md me-2"></i>
+                                    My Profile
+                                </a>
+                            </li>
+                            
+                            <li class="nav-item mt-3">
+                                <a class="nav-link text-danger" href="{{ url_for('logout') }}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>
+                                    Logout
+                                </a>
+                            </li>
+                        </ul>
+                        
+                        <hr>
+                        
+                        <!-- User information -->
+                        <div class="d-flex align-items-center ps-3 mt-4">
+                            <div class="bg-secondary rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 40px; height: 40px;">
+                                <i class="fas {{ 'fa-user-md' if current_user.is_doctor() else 'fa-user' }}"></i>
+                            </div>
+                            <div>
+                                <div class="fw-semibold">{{ current_user.get_full_name() }}</div>
+                                <small class="text-muted">{{ current_user.user_type|capitalize }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Main content -->
+                <div class="col-md-9 col-lg-10 ms-md-auto px-md-4 py-4">
+                    <!-- Flash messages -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <!-- Auth Content -->
+                    {% block auth_content %}{% endblock %}
+                    
+                    <!-- Footer -->
+                    <footer class="footer mt-5 py-3">
+                        <div class="container">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center">
+                                <div class="col-md-6">
+                                    <span class="text-muted">&copy; 2024 VITA - Vital Intelligence for Treatment & Access</span>
+                                </div>
+                                <div class="col-md-6 d-flex justify-content-end">
+                                    <ul class="list-inline mb-0">
+                                        <li class="list-inline-item"><a href="#" class="text-muted">Privacy Policy</a></li>
+                                        <li class="list-inline-item"><a href="#" class="text-muted">Terms of Service</a></li>
+                                        <li class="list-inline-item"><a href="#" class="text-muted">Contact</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <!-- Public Navigation -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container">
+                <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
+                    <i class="fas fa-hospital me-2"></i>
+                    <span>VITA</span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link {{ 'active' if request.endpoint == 'index' else '' }}" href="{{ url_for('index') }}">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ 'active' if request.endpoint == 'login' else '' }}" href="{{ url_for('login') }}">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ 'active' if request.endpoint == 'register' else '' }}" href="{{ url_for('register') }}">Register</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        
+        <!-- Flash messages -->
+        <div class="container mt-4">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+        
+        <!-- Public Content -->
+        <div class="container mt-4">
+            {% block public_content %}{% endblock %}
+        </div>
+        
+        <!-- Footer -->
+        <footer class="bg-dark text-light py-4 mt-5">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-hospital me-2"></i> VITA</h5>
+                        <p>
+                            Vital Intelligence for Treatment & Access. Our AI-powered hospital management system 
+                            simplifies medical documents and enhances the patient experience.
+                        </p>
+                    </div>
+                    <div class="col-md-3">
+                        <h5>Quick Links</h5>
+                        <ul class="list-unstyled">
+                            <li><a href="#" class="text-light">About Us</a></li>
+                            <li><a href="#" class="text-light">Services</a></li>
+                            <li><a href="#" class="text-light">Contact</a></li>
+                            <li><a href="#" class="text-light">FAQ</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-3">
+                        <h5>Contact</h5>
+                        <address>
+                            <i class="fas fa-map-marker-alt me-2"></i> 123 Hospital St.<br>
+                            <i class="fas fa-phone me-2"></i> (123) 456-7890<br>
+                            <i class="fas fa-envelope me-2"></i> info@vita-health.com
+                        </address>
+                    </div>
+                </div>
+                <hr class="bg-light">
+                <div class="text-center">
+                    <p class="mb-0">&copy; 2024 VITA - Vital Intelligence for Treatment & Access. All rights reserved.</p>
+                </div>
+            </div>
+        </footer>
+    {% endif %}
+    
+    <!-- Content block (for compatibility) -->
+    {% block content %}{% endblock %}
+    
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-config.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

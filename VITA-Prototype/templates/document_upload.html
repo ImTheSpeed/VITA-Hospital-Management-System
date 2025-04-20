@@ -1,0 +1,195 @@
+{% extends "layout.html" %}
+
+{% block title %}Document Upload & Analysis - VITA{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 mb-0">Document Upload & Analysis</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Document Upload</li>
+            </ol>
+        </nav>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <!-- Document Upload Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">Upload Medical Document</h5>
+                </div>
+                <div class="card-body">
+                    {% if analyzing and document %}
+                        <!-- Document Analysis Processing -->
+                        <div class="text-center py-4">
+                            <div class="mb-4">
+                                <i class="fas fa-brain text-primary" style="font-size: 3rem;"></i>
+                            </div>
+                            <h4 class="mb-3">Analyzing Document</h4>
+                            <p class="mb-4">We're using AI to analyze your medical document and make it easier to understand. This may take a moment.</p>
+                            
+                            <div class="mb-4" id="analysisProgress">
+                                <div class="progress mb-3" style="height: 10px;">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
+                                </div>
+                                <p class="text-muted small">Processing "{{ document.original_filename }}"</p>
+                            </div>
+                            
+                            <form id="analyzeForm" method="POST" action="{{ url_for('analyze_document', document_id=document.id) }}">
+                                <button id="analyzeBtn" type="submit" class="btn btn-primary btn-lg px-5" onclick="analyzeDocument({{ document.id }})">
+                                    Start Analysis
+                                </button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <!-- Upload Form -->
+                        <form method="POST" action="{{ url_for('document_upload') }}" enctype="multipart/form-data" id="uploadForm">
+                            <div class="upload-area mb-4" id="uploadArea">
+                                <div class="py-5">
+                                    <div class="mb-3">
+                                        <i class="fas fa-file-medical text-primary" style="font-size: 3rem;"></i>
+                                    </div>
+                                    <h5 class="mb-2">Drag & Drop Medical Document</h5>
+                                    <p class="text-muted mb-4">or click to browse files</p>
+                                    
+                                    <div class="mb-3">
+                                        <span class="badge bg-primary me-1">PDF</span>
+                                        <span class="badge bg-primary me-1">JPG</span>
+                                        <span class="badge bg-primary">TXT</span>
+                                    </div>
+                                    
+                                    <div class="mt-2">
+                                        <span id="fileName" class="text-muted">No file selected</span>
+                                    </div>
+                                </div>
+                                <input type="file" name="document" id="document" class="d-none" accept=".pdf,.jpg,.jpeg,.png,.txt">
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button id="uploadBtn" type="submit" class="btn btn-primary">
+                                    <span id="uploadSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                    <span id="uploadText">Upload Document</span>
+                                </button>
+                            </div>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Document Types Explanation -->
+            <div class="card">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">Supported Document Types</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <div class="text-center">
+                                <div class="mb-3">
+                                    <i class="fas fa-file-pdf text-danger" style="font-size: 2rem;"></i>
+                                </div>
+                                <h6>Medical Reports</h6>
+                                <p class="small text-muted">Lab results, discharge summaries, specialist reports</p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <div class="text-center">
+                                <div class="mb-3">
+                                    <i class="fas fa-prescription text-success" style="font-size: 2rem;"></i>
+                                </div>
+                                <h6>Prescriptions</h6>
+                                <p class="small text-muted">Medication details, dosage instructions, treatment plans</p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <div class="mb-3">
+                                    <i class="fas fa-x-ray text-info" style="font-size: 2rem;"></i>
+                                </div>
+                                <h6>Imaging Reports</h6>
+                                <p class="small text-muted">X-ray, MRI, CT scan reports and evaluations</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 mb-4">
+            <!-- How It Works -->
+            <div class="card mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">How It Works</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex mb-3">
+                        <div class="bg-primary rounded-circle text-white fs-5 d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px;">1</div>
+                        <div>
+                            <h6 class="mb-1">Upload Your Document</h6>
+                            <p class="text-muted small mb-0">Select any medical document or report you'd like to understand better.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex mb-3">
+                        <div class="bg-primary rounded-circle text-white fs-5 d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px;">2</div>
+                        <div>
+                            <h6 class="mb-1">AI Analysis</h6>
+                            <p class="text-muted small mb-0">Our advanced AI system analyzes the content and medical terminology.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex mb-3">
+                        <div class="bg-primary rounded-circle text-white fs-5 d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px;">3</div>
+                        <div>
+                            <h6 class="mb-1">Get Simplified Results</h6>
+                            <p class="text-muted small mb-0">Receive an easy-to-understand version with explanations of medical terms.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex">
+                        <div class="bg-primary rounded-circle text-white fs-5 d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px;">4</div>
+                        <div>
+                            <h6 class="mb-1">Save & Share</h6>
+                            <p class="text-muted small mb-0">Access your analyzed documents anytime and share with your healthcare providers.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Documents -->
+            <div class="card">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">Your Recent Documents</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for document in current_user.documents[:5] %}
+                        <a href="{% if document.is_analyzed %}{{ url_for('document_analysis', document_id=document.id) }}{% else %}{{ url_for('analyze_document', document_id=document.id) }}{% endif %}" class="list-group-item list-group-item-action px-0 py-3 border-0 border-bottom">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1 text-truncate" style="max-width: 200px;">{{ document.original_filename }}</h6>
+                                    <p class="text-muted small mb-0">{{ document.upload_date.strftime('%b %d, %Y') }}</p>
+                                </div>
+                                <span class="badge {% if document.is_analyzed %}bg-success{% else %}bg-warning{% endif %}">
+                                    {% if document.is_analyzed %}Analyzed{% else %}Pending{% endif %}
+                                </span>
+                            </div>
+                        </a>
+                        {% else %}
+                        <div class="text-center py-3">
+                            <p class="text-muted mb-0">No documents uploaded yet</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
